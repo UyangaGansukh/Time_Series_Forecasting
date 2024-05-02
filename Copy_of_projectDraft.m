@@ -139,7 +139,6 @@ logRDPIPCA = log(RDPIPCA);
 RDPIPCA_GR = diff(log(RDPIPCA));
 
 
-% might need to drop the Variable if not using VAR?
 % % VARIABLE 7: PERSONAL CONSUMPTION EXPENDITURES: Durable Goods
 % UNITS: billions of US dollars
 PCEDG = 'PCEDG'; 
@@ -162,7 +161,7 @@ logPCEDG= log(PCEDG);
 PCEDG_GR = diff(log(PCEDG));
 
 
-%% Plot all in one grapg to find leading indicators & seasonalities
+%% Plot all series to find leading indicators & seasonalities
 
 date_2=date(date>=tau0);
 
@@ -202,8 +201,6 @@ figure(9)
 plot(date_2(2:end), logPCEDG)
 title('Ln(Personal Consumption Expeditures)');
 
-
-
 figure(10)
 subplot(4, 1, 1);
 plot(date_2, UMCSENT);
@@ -220,7 +217,6 @@ title('Inflation rate');
 subplot(4, 1, 4);
 plot(date_2, ISPREAD10)
 title('10-year Treasury Bill Interest Rate Spread');
-
 
 figure(11)
 subplot(4, 1, 1);
@@ -434,7 +430,7 @@ sgtitle('Junk Bond Spread: Annual Trend');
 p = 12;
 q = 12; 
 
-% Unemployment Granger causes CSI: yes, significant pvalue
+% Unemployment Granger causes CSI: significant pvalue, thus reject null hypothesis
 x = UNRATE;
 OLSmdl = fitlm([lagmatrix(x,1:q) lagmatrix(UMCSENT,1:p)],UMCSENT);
 [EstCov,se,coeff]=hac(OLSmdl,'display','off',Type="HC");
@@ -449,7 +445,7 @@ fprintf('pvalue: %0.3f\n', pValue);
 disp(' ');
 
 
-% Inflation rate Granger causes CSI: yes, significant pvalue
+% Inflation rate Granger causes CSI: reject null hypothesis
 x = INFR;
 OLSmdl = fitlm([lagmatrix(x,1:q) lagmatrix(UMCSENT,1:p)],UMCSENT);
 [EstCov,se,coeff]=hac(OLSmdl,'display','off',Type="HC");
@@ -465,7 +461,7 @@ disp(' ');
 
 
 
-% T-bill interest rate spread Granger causes CSI: yes, significant pvalue
+% T-bill interest rate spread Granger causes CSI: reject null hypothesis
 x = ISPREAD10;
 OLSmdl = fitlm([lagmatrix(x,1:q) lagmatrix(UMCSENT,1:p)],UMCSENT);
 [EstCov,se,coeff]=hac(OLSmdl,'display','off',Type="HC");
@@ -482,7 +478,7 @@ disp(' ');
 
 
 
-% Junk bond spread Granger causes CSI: yes, significant pvalue
+% Junk bond spread Granger causes CSI: reject null hypothesis
 x = JSPREAD;
 OLSmdl = fitlm([lagmatrix(x,1:q) lagmatrix(UMCSENT,1:p)],UMCSENT);
 [EstCov,se,coeff]=hac(OLSmdl,'display','off',Type="HC");
@@ -514,7 +510,7 @@ disp(' ');
 
 
 
-% Consumption Expenditure Granger causes CSI: no, not significant
+% Consumption Expenditure Granger causes CSI: fail to reject null hypothesis
 x = PCEDG_GR;
 OLSmdl = fitlm([lagmatrix(x,1:q) lagmatrix(UMCSENT(3:end),1:p)],UMCSENT(3:end));
 [EstCov,se,coeff]=hac(OLSmdl,'display','off',Type="HC");
@@ -523,44 +519,6 @@ EstCov = 0.5*(EstCov+EstCov');
 [h,pValue,stat,cValue]=waldtest(coeff(2:q+1,1),R,EstCov);
 
 disp('Consumption Expenditure');
-fprintf('pvalue: %0.3f\n', pValue);
-% fprintf('AIC: %0.2f\n', OLSmdl.ModelCriterion.AIC);
-% fprintf('BIC: %0.2f\n', OLSmdl.ModelCriterion.BIC);
-disp(' ');
-
-
-% Test with Additional Variable: Federal Funds Rate
-
-
-% VARIABLE 8: FEDERAL FUNDS RATE
-FFER = 'FEDFUNDS';
-FFER = fetch(c,FFER);
-FFER = FFER.Data; 
-
-FFERdate = FFER(:,1); 
-FFERdate = datetime(FFERdate,'ConvertFrom','datenum');
-
-FFER = FFER(:,2); 
-
-
-% Unit root test
-adftest(FFER,Model="ARD",lags=12); %0
-
-% Take change in federal funds rate
-FFER_DIFF = FFER-lagmatrix(FFER,1);
-FFER_DIFF = FFER_DIFF(FFERdate>=tau0);
-
-
-
-% Change in Federal Funds Rate causes CSI: yes, significant pvalue
-x = FFER_DIFF;
-OLSmdl = fitlm([lagmatrix(x,1:q) lagmatrix(UMCSENT,1:p)],UMCSENT);
-[EstCov,se,coeff]=hac(OLSmdl,'display','off',Type="HC");
-R=zeros(q,1+p+q); R(1:q,2:q+1)=eye(q);
-EstCov = 0.5*(EstCov+EstCov');
-[h,pValue,stat,cValue]=waldtest(coeff(2:q+1,1),R,EstCov);
-
-disp('Federal Funds Rate');
 fprintf('pvalue: %0.3f\n', pValue);
 % fprintf('AIC: %0.2f\n', OLSmdl.ModelCriterion.AIC);
 % fprintf('BIC: %0.2f\n', OLSmdl.ModelCriterion.BIC);
@@ -623,7 +581,7 @@ fprintf('Number of DL lags (q): %d\n', min_q);
 
 
 
-% Model Selection with AIC 2: CSI and Inflation rate
+%% Model Selection with AIC 2: CSI and Inflation rate
 
 AIC_matrix = zeros(12, 13);
 
@@ -678,7 +636,7 @@ fprintf('Number of DL lags (q): %d\n', min_q);
 
 
 
-% Model Selection with AIC 3: CSI and 10-year Tresury bill spread
+%% Model Selection with AIC 3: CSI and 10-year Tresury bill spread
 
 AIC_matrix = zeros(12, 13);
 
@@ -734,7 +692,7 @@ fprintf('Number of DL lags (q): %d\n', min_q);
 
 
 
-% Model Selection with AIC 4: CSI and Junk bond spread
+%% Model Selection with AIC 4: CSI and Junk bond spread
 
 AIC_matrix = zeros(12, 13);
 
@@ -788,9 +746,7 @@ fprintf('Number of DL lags (q): %d\n', min_q);
 
 
 
-
-
-% Model Selection with AIC 5: CSI and Personal Income
+%% Model Selection with AIC 5: CSI and Personal Income
 
 %AIC_matrix = zeros(12, 12);
 
@@ -838,62 +794,6 @@ fprintf('Number of DL lags (q): %d\n', min_q);
 %fprintf('Minimum AIC: %0.2f\n', min_AIC);
 %fprintf('Number of AR lags (p): %d\n', min_p);
 %fprintf('Number of DL lags (q): %d\n', min_q);
-
-
-
-
-% Model Selection with AIC 5: CSI and Federal Funds Rate
-
-% AIC_matrix = zeros(12, 13);
-% 
-% x_dl=FFER_DIFF;
-% 
-% min_p = 0;
-% min_q = 0;
-% min_AIC = Inf;
-% 
-% % Loop over different lags for AR model
-% for p = 1:12
-%     % Loop over different lags for distributed lag model
-%     for q = 0:12
-%         % Construct the regressors matrix
-% 
-%         AR = lagmatrix(UMCSENT, 1:p);
-%         DL = lagmatrix(x_dl, 1:q);
-% 
-%         X = [AR, DL];
-% 
-%         % Fit the model (example using linear regression)
-%         mdl = fitlm(X(13:end, :), UMCSENT(13:end));
-% 
-%         % Calculate AIC
-%         AIC = mdl.ModelCriterion.AIC;
-% 
-%         % Store AIC score in the matrix
-%         AIC_matrix(p, q+1) = AIC;
-% 
-%         if AIC < min_AIC
-%             min_AIC = AIC;
-%             min_p = p;
-%             min_q = q;
-%         end
-%     end
-% end
-% 
-% % Convert matrix to table
-% AIC_5 = array2table(AIC_matrix);
-% 
-% % Write the table to a CSV file
-% writetable(AIC_5, 'AIC_5.csv');
-% 
-% % Display or use the AIC matrix as needed
-% disp(AIC_matrix);
-% 
-% % Display the minimum AIC and corresponding lag values
-% fprintf('Minimum AIC: %0.2f\n', min_AIC);
-% fprintf('Number of AR lags (p): %d\n', min_p);
-% fprintf('Number of DL lags (q): %d\n', min_q);
-% 
 
 
 
@@ -958,7 +858,7 @@ display(mdl);
 
 
 
-%% Stepwise selection
+%% Stepwise selection: verify the model selection
 
 %X_DL = [UNRATE,INFR,JSPREAD,ISPREAD10];% logPCEDG,logRDPIPCA,PDEgr,PDIgr
 
@@ -1018,85 +918,7 @@ mdl = fitlm(X(13:end, :), UMCSENT(13:end, :));
 mdl.ModelCriterion.AIC
 
 
-
-
-% p, q AIC, CSI 3vs6
-AR = lagmatrix(UMCSENT, 1:3);
-DL_1 = lagmatrix(UNRATE, 1:2);
-DL_2 = lagmatrix(INFR, 1:1);
-DL_3 = lagmatrix(JSPREAD, 1:5);
-DL_4 = lagmatrix(ISPREAD10, 1:1);
-
-X = [AR, DL_1, DL_2, DL_3, DL_4];
-
-mdl = fitlm(X(13:end, :), UMCSENT(13:end, :));
-mdl.ModelCriterion.AIC
-
-
-
-% p, q AIC, DL1 0vs1
-AR = lagmatrix(UMCSENT, 1:6);
-DL_1 = lagmatrix(UNRATE, 1:2);
-DL_2 = lagmatrix(INFR, 1:1);
-DL_3 = lagmatrix(JSPREAD, 1:5);
-DL_4 = lagmatrix(ISPREAD10, 1:1);
-
-X = [AR, DL_2, DL_3, DL_4];
-
-mdl = fitlm(X(13:end, :), UMCSENT(13:end, :));
-mdl.ModelCriterion.AIC
-
-
-
-
-% p, q AIC, DL2 1vs2
-AR = lagmatrix(UMCSENT, 1:6);
-DL_1 = lagmatrix(UNRATE, 1:2);
-DL_2 = lagmatrix(INFR, 1:2);
-DL_3 = lagmatrix(JSPREAD, 1:5);
-DL_4 = lagmatrix(ISPREAD10, 1:1);
-
-X = [AR, DL_2, DL_3, DL_4];
-
-mdl = fitlm(X(13:end, :), UMCSENT(13:end, :));
-mdl.ModelCriterion.AIC
-
-
-
-
-% p, q AIC, DL3 5vs6
-AR = lagmatrix(UMCSENT, 1:6);
-DL_1 = lagmatrix(UNRATE, 1:2);
-DL_2 = lagmatrix(INFR, 1:1);
-DL_3 = lagmatrix(JSPREAD, 1:6);
-DL_4 = lagmatrix(ISPREAD10, 1:1);
-
-X = [AR, DL_2, DL_3, DL_4];
-
-mdl = fitlm(X(13:end, :), UMCSENT(13:end, :));
-mdl.ModelCriterion.AIC
-
-
-
-% p, q AIC, DL4 0vs1
-AR = lagmatrix(UMCSENT, 1:6);
-DL_1 = lagmatrix(UNRATE, 1:1);
-DL_2 = lagmatrix(INFR, 1:1);
-DL_3 = lagmatrix(JSPREAD, 1:5);
-DL_4 = lagmatrix(ISPREAD10, 1:1);
-
-X = [AR, DL_2, DL_3];
-
-mdl = fitlm(X(13:end, :), UMCSENT(13:end, :));
-mdl.ModelCriterion.AIC
-
-
-
-
-
-
-
-
+%% Model selection from the shortlisted models 
 
 % p, q AIC
 AR = lagmatrix(UMCSENT, 1:6);
@@ -1155,31 +977,6 @@ X = [AR, DL_1, DL_2, DL_3, DL_4];
 
 mdl = stepwiselm(X(13:end, :), UMCSENT(13:end, :), 'Criterion', 'AIC');
 
-%% Simply combine "best" 2 reg
-% p, q AIC
-AR6 = lagmatrix(UMCSENT, 1:6);
-X2 = UNRATE; % #7
-DL_3 = lagmatrix(INFR, 1:1);% #8
-X_4 = ISPREAD10; % #9
-DL_5 = lagmatrix(JSPREAD, 1:5); % #10-14
-
-X = [AR6, X2, DL_3, X_4, DL_5];
-
-mdl = fitlm(X(13:end, :), UMCSENT(13:end, :));
-AIC = mdl.ModelCriterion.AIC; % 3.0263e+03 = 3026.3
-
-mdl = stepwiselm(X(13:end, :), UMCSENT(13:end, :), 'Criterion', 'AIC');
-AIC = mdl.ModelCriterion.AIC; % 
-
-
-% use AR(3), AIC larger
-% AR3 = lagmatrix(UMCSENT, 1:3);
-% 
-% X = [AR3, X2, DL_3, X_4, DL_5];
-% 
-% mdl = fitlm(X(13:end, :), UMCSENT(13:end, :));
-% 
-% AIC = mdl.ModelCriterion.AIC; % 3.0320e+03
 
 
 %% Final Combined model
@@ -1217,23 +1014,7 @@ for h=1:12;
     UMCSENT_fi_95(h,:) = UMCSENT_pi_95;
 end
 
-% for h=1:12;
-%     AR = lagmatrix(UMCSENT, h:h+5);
-%     DL_1=lagmatrix(UNRATE, h:h+1);
-%     DL_2 = lagmatrix(INFR, h:h);
-%     DL_3 = lagmatrix(JSPREAD, h:h+4);
-% 
-%     X = [AR, DL_1, DL_2, DL_3];
-% 
-%     mdl=fitlm([X(est,:)],UMCSENT(est));
-%     [UMCSENT_p, UMCSENT_pi_50] = predict(mdl, [fliplr(UMCSENT(T-6+1:T)'), fliplr(UNRATE(T-2+1:T)'), fliplr(INFR(T-1+1:T)'), fliplr(JSPREAD(T-5+1:T)')], 'Prediction', 'observation', 'Alpha', 0.5); % 50% forecast interval
-%     [UMCSENT_p, UMCSENT_pi_95] = predict(mdl, [fliplr(UMCSENT(T-6+1:T)'), fliplr(UNRATE(T-2+1:T)'), fliplr(INFR(T-1+1:T)'), fliplr(JSPREAD(T-5+1:T)')], 'Prediction', 'observation', 'Alpha', 0.05); % 95% forecast interval
-%     UMCSENT_f(h,1) = UMCSENT_p;
-%     UMCSENT_fi_50(h,:) = UMCSENT_pi_50;
-%     UMCSENT_fi_95(h,:) = UMCSENT_pi_95;
-% end
-
-
+%% Forecast plots
 
 figure(20);
 plot(date_2(date_2>= datetime(2018,1,1)),UMCSENT(date_2>= datetime(2018,1,1)));
